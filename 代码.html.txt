@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小手机模拟器 · 灵魂版</title>
+    <style>
+        :root {
+            --bg: #0f0f1a;
+            --accent: #4ecdc4;
+            --red: #ff6b6b;
+            --card: rgba(255, 255, 255, 0.06);
+            --hover: rgba(255, 255, 255, 0.12);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            padding: 10px;
+        }
+        .phone {
+            width: 375px;
+            height: 760px;
+            background: #1a1a2e;
+            border-radius: 40px;
+            padding: 12px;
+            box-shadow: 0 0 0 3px #3a3a50, 0 0 0 7px #1a1a2e, 0 0 0 9px #4a4a60, 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a3e, #0f0f2a 50%, #162040);
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 130px;
+            height: 22px;
+            background: #0a0a0a;
+            border-radius: 0 0 18px 18px;
+            z-index: 200;
+        }
+        .status-bar {
+            height: 28px;
+            padding: 4px 18px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 150;
+            flex-shrink: 0;
+            background: transparent;
+        }
+        .main-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 锁屏 */
+        .lockscreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a1a, #0f0f2a 40%, #1a1a3e);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform .4s ease, opacity .4s ease;
+            border-radius: 30px;
+        }
+        .lockscreen.unlock {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .lock-time {
+            font-size: 56px;
+            font-weight: 200;
+            color: #fff;
+            letter-spacing: 2px;
+            font-family: 'SF Mono', 'Menlo', monospace;
+        }
+        .lock-date {
+            font-size: 15px;
+            color: #aaa;
+            margin-top: 6px;
+        }
+        .lock-hint {
+            margin-top: 80px;
+            color: #666;
+            font-size: 13px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .lock-notif {
+            position: absolute;
+            bottom: 120px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 12px 16px;
+            width: 85%;
+            color: #fff;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+        }
+        .lock-notif .n-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .lock-notif .n-body {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        /* 通知中心 */
+        .notif-center {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.95);
+            z-index: 250;
+            transform: translateY(-100%);
+            transition: transform .35s ease;
+            border-radius: 30px;
+            padding: 40px 16px 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+        }
+        .notif-center.show {
+            transform: translateY(0);
+        }
+        .notif-center .nc-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .notif-item {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            color: #fff;
+            font-size: 13px;
+        }
+        .notif-item .ni-app {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 3px;
+        }
+
+        /* 主屏幕 */
+        .homescreen {
+            padding: 12px 16px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        .homescreen::-webkit-scrollbar {
+            width: 0;
+        }
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px 6px;
+            padding: 8px 0;
+        }
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: transform .15s;
+        }
+        .app-item:active {
+            transform: scale(.85);
+        }
+        .app-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .app-label {
+            font-size: 10px;
+            color: #ddd;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff4757;
+            color: #fff;
+            font-size: 9px;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .dock {
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 22px;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-around;
+            margin: 6px 4px 8px;
+        }
+        .dock .app-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            font-size: 20px;
+        }
+
+        /* 应用内 */
+        .app-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f0f1a;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            border-radius: 30px;
+            overflow: hidden;
+        }
+        .app-screen.active {
+            display: flex;
+        }
+        .app-header {
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .btn-back {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .app-title {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            flex: 1;
+        }
+        .app-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            color: #ddd;
+        }
+        .app-body::-webkit-scrollbar {
+            width: 2px;
+        }
+        .app-body::-webkit-scrollbar-thumb {
+            background: #333;
+        }
+        .input {
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.07);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            width: 100%;
+        }
+        .input:focus {
+            border-color: var(--accent);
+        }
+        .btn {
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+        .btn:active {
+            transform: scale(.93);
+        }
+        .btn-a {
+            background: var(--accent);
+            color: #000;
+        }
+        .btn-r {
+            background: var(--red);
+            color: #fff;
+        }
+        .btn-g {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .flex-1 {
+            flex: 1;
+        }
+        .text-sm {
+            font-size: 11px;
+            color: #888;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mt-8 {
+            margin-top: 8px;
+        }
+        .mt-12 {
+            margin-top: 12px;
+        }
+        .mt-20 {
+            margin-top: 20px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 6px;
+        }
+        .card:hover {
+            background: var(--hover);
+        }
+
+        /* 聊天伙伴 */
+        .char-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background .2s;
+            position: relative;
+        }
+        .char-card:hover {
+            background: var(--hover);
+        }
+        .char-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+        .char-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .char-name {
+            font-weight: 600;
+            color: #fff;
+            font-size: 15px;
+        }
+        .char-mood {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .char-heart {
+            font-size: 12px;
+            color: #ff6b6b;
+            margin-top: 2px;
+        }
+        .char-delete {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            opacity: .5;
+        }
+        .char-delete:hover {
+            opacity: 1;
+        }
+
+        /* 聊天消息 */
+        .msg-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            min-height: 200px;
+            max-height: 350px;
+        }
+        .msg {
+            max-width: 78%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 13px;
+            line-height: 1.5;
+            animation: msgIn .3s ease;
+            word-break: break-word;
+        }
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .msg.me {
+            align-self: flex-end;
+            background: var(--accent);
+            color: #000;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.you {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border-bottom-left-radius: 4px;
+        }
+        .heart-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin: 8px 0;
+        }
+        .heart-fill {
+            height: 100%;
+            background: #ff6b6b;
+            border-radius: 2px;
+            transition: width .5s;
+        }
+
+        /* 来电 */
+        .call-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .call-overlay.show {
+            display: flex;
+        }
+        .call-avatar {
+            font-size: 70px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        .call-name {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+        .call-status {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 6px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .3;
+            }
+        }
+        .call-actions {
+            display: flex;
+            gap: 30px;
+            margin-top: 50px;
+        }
+        .call-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 26px;
+            transition: all .2s;
+        }
+        .call-btn:active {
+            transform: scale(.85);
+        }
+        .call-accept {
+            background: #00b894;
+            color: #fff;
+        }
+        .call-reject {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        /* 设置弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal {
+            background: #1e1e30;
+            border-radius: 18px;
+            padding: 24px;
+            color: #fff;
+            width: 300px;
+            max-width: 90vw;
+        }
+        .modal h3 {
+            margin-bottom: 12px;
+            font-size: 17px;
+        }
+        .modal select,
+        .modal input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.07);
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            outline: none;
+        }
+        .modal select:focus,
+        .modal input:focus {
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone">
+        <div class="screen" id="screen">
+            <div class="notch"></div>
+            <div class="status-bar"><span id="sTime">12:00</span><span>5G</span></div>
+            <div class="main-area" id="mainArea">
+
+                <!-- 锁屏 -->
+                <div class="lockscreen" id="lockscreen">
+                    <div class="lock-time" id="lockTime">12:00</div>
+                    <div class="lock-date" id="lockDate">6月28日 周日</div>
+                    <div class="lock-notif" id="lockNotif">
+                        <div class="n-title">📩 新消息</div>
+                        <div class="n-body" id="lockNotifBody">小橘：还没睡？</div>
+                    </div>
+                    <div class="lock-hint">↑ 上滑解锁</div>
+                </div>
+
+                <!-- 通知中心 -->
+                <div class="notif-center" id="notifCenter">
+                    <div class="nc-title">通知中心</div>
+                    <div id="notifList"></div>
+                </div>
+
+                <!-- 主屏幕 -->
+                <div class="homescreen" id="homescreen">
+                    <div class="apps-grid" id="appsGrid"></div>
+                    <div class="dock" id="dockBar"></div>
+                </div>
+
+                <!-- 应用 -->
+                <div class="app-screen" id="appWeather"></div>
+                <div class="app-screen" id="appClock"></div>
+                <div class="app-screen" id="appNotes"></div>
+                <div class="app-screen" id="appContacts"></div>
+                <div class="app-screen" id="appCalendar"></div>
+                <div class="app-screen" id="appMusic"></div>
+                <div class="app-screen" id="appMessages"></div>
+                <div class="app-screen" id="appChat"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 来电弹窗 -->
+    <div class="call-overlay" id="callOverlay">
+        <div class="call-avatar" id="callAvatar">🐱</div>
+        <div class="call-name" id="callName">小橘</div>
+        <div class="call-status">📞 来电中...</div>
+        <div class="call-actions">
+            <button class="call-btn call-reject" onclick="rejectCall()">📵</button>
+            <button class="call-btn call-accept" onclick="acceptCall()">📞</button>
+        </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modalContent"></div>
+    </div>
+
+    <script>
+        // ============ 全局数据 ============
+        let notes = [],
+            contacts = [],
+            events = {},
+            msgs = [],
+            characters = [],
+            curApp = 'home',
+            curChar = null,
+            notifs = [];
+        let clockTimer, swTimer, swRunning = false,
+            swSec = 0;
+        let musicPlaying = false,
+            musicPos = 30,
+            musicInt,
+            musicIdx = 0;
+        let calY, calM;
+        let lockStartY = 0,
+            lockMoved = false;
+
+        const SEASONS = [
+            { m: [12, 1, 2], icon: '❄️', t: [2, 10], desc: '寒冷', tips: '多穿点' },
+            { m: [3, 4, 5], icon: '🌸', t: [12, 24], desc: '温暖', tips: '适合出游' },
+            { m: [6, 7, 8], icon: '☀️', t: [26, 36], desc: '炎热', tips: '注意防暑' },
+            { m: [9, 10, 11], icon: '🍂', t: [14, 24], desc: '凉爽', tips: '秋高气爽' },
+        ];
+
+        const MUSICS = [
+            { title: '晴天', artist: '周杰伦', color: 'linear-gradient(135deg,#ff6b6b,#ee5a24)' },
+            { title: '起风了', artist: '买辣椒也用券', color: 'linear-gradient(135deg,#74b9ff,#0984e3)' },
+            { title: '夜曲', artist: '周杰伦', color: 'linear-gradient(135deg,#6c5ce7,#a29bfe)' },
+            { title: '稻香', artist: '周杰伦', color: 'linear-gradient(135deg,#fdcb6e,#e17055)' },
+        ];
+
+        const APPS = [
+            { id: 'weather', n: '天气', i: '🌤️', c: '#74b9ff' },
+            { id: 'clock', n: '时钟', i: '⏰', c: '#1e272e' },
+            { id: 'notes', n: '记事本', i: '📝', c: '#ffc048' },
+            { id: 'contacts', n: '通讯录', i: '📇', c: '#00b894' },
+            { id: 'calendar', n: '日历', i: '📅', c: '#fd79a8' },
+            { id: 'music', n: '音乐', i: '🎵', c: '#ff6b6b' },
+            { id: 'messages', n: '信息', i: '💬', c: '#00cec9' },
+            { id: 'chat', n: '聊天伙伴', i: '👤', c: '#6c5ce7' },
+        ];
+        const DOCK = [
+            { id: 'notes', n: '记事本', i: '📝', c: '#ffc048' },
+            { id: 'messages', n: '信息', i: '💬', c: '#00cec9' },
+            { id: 'chat', n: '聊天', i: '👤', c: '#6c5ce7' },
+            { id: 'music', n: '音乐', i: '🎵', c: '#ff6b6b' },
+        ];
+
+        const PERSONALITIES = {
+            '温柔': { tone: '温暖体贴', emoji: '🌸✨', prefix: ['要记得', '别担心', '我陪你'], suffix: ['哦', '呀', '呢'],
+                style: 'caring' },
+            '傲娇': { tone: '嘴硬心软', emoji: '🙄💢', prefix: ['切', '哼', '烦死了'], suffix: ['啦', '咯', '嘛'],
+            style: 'tsundere' },
+            '毒舌': { tone: '一针见血', emoji: '😏🗿', prefix: ['不是吧', '你居然', '认真的？'], suffix: ['呵呵', '吧', '呢'],
+            style: 'sarcastic' },
+            '憨厚': { tone: '老实巴交', emoji: '😊🐻', prefix: ['那个...', '俺觉得', '哈哈'], suffix: ['嘿嘿', '哈', '哟'],
+            style: 'simple' },
+            '热情': { tone: '活力满满', emoji: '🔥🎉', prefix: ['太棒了！', '听我的！', '必须的！'], suffix: ['啊', '哦', '哈'],
+                style: 'enthusiastic' },
+            '高冷': { tone: '惜字如金', emoji: '😐', prefix: ['嗯', '哦', '好'], suffix: ['', '.', '...'], style: 'cold' },
+        };
+
+        // ============ 初始化 ============
+        function init() {
+            loadData();
+            const now = new Date();
+            calY = now.getFullYear();
+            calM = now.getMonth();
+            updateAllTimes();
+            setInterval(updateAllTimes, 1000);
+            renderApps();
+            initAllUIs();
+            setupLockScreen();
+            setupNotifCenter();
+            scheduleRandomCall();
+            if (characters.length === 0) {
+                characters = [
+                    { id: 'c1', name: '小橘', avatar: '🐱', personality: '傲娇', catchphrase: '切，关我什么事',
+                        relation: '损友', birthday: '', heart: 50, history: [] },
+                    { id: 'c2', name: '莉莉', avatar: '🌸', personality: '温柔', catchphrase: '今天也要开心哦',
+                        relation: '闺蜜', birthday: '', heart: 40, history: [] },
+                    { id: 'c3', name: '老周', avatar: '🔥', personality: '热情', catchphrase: '听我的准没错！',
+                        relation: '朋友', birthday: '', heart: 30, history: [] },
+                ];
+                saveChars();
+            }
+            addNotif('📱 欢迎', '小手机模拟器已就绪，8个应用等你探索');
+            updateLockNotif();
+        }
+
+        function loadData() {
+            notes = JSON.parse(localStorage.pn_notes || '[]');
+            contacts = JSON.parse(localStorage.pn_contacts || '[]');
+            events = JSON.parse(localStorage.pn_events || '{}');
+            msgs = JSON.parse(localStorage.pn_msgs || '[]');
+            characters = JSON.parse(localStorage.pn_chars || '[]');
+            if (!contacts.length) {
+                contacts = [
+                    { n: '妈妈', p: '138****1234', a: '👩', c: '#fd79a8' },
+                    { n: '爸爸', p: '139****5678', a: '👨', c: '#74b9ff' },
+                ];
+                save('contacts', contacts);
+            }
+            if (!msgs.length) {
+                msgs = [
+                    { t: '周末一起出去玩吧！', s: false, time: '10:30' },
+                    { t: '好的！去哪里？', s: true, time: '10:32' },
+                    { t: '去公园怎么样？', s: false, time: '10:33' },
+                ];
+                save('msgs', msgs);
+            }
+        }
+
+        function save(k, v) { localStorage['pn_' + k] = JSON.stringify(v); }
+
+        function saveChars() { save('chars', characters); }
+
+        function updateAllTimes() {
+            const now = new Date();
+            document.getElementById('sTime').textContent =
+                now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('lockTime').textContent =
+                now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('lockDate').textContent =
+                (now.getMonth() + 1) + '月' + now.getDate() + '日 周' + ['日', '一', '二', '三', '四', '五', '六'][now
+                .getDay()
+            ];
+            const cd = document.getElementById('clockDisp');
+            const dd = document.getElementById('dateDisp');
+            if (cd) cd.textContent = now.toLocaleTimeString('zh-CN', { hour12: false });
+            if (dd) dd.textContent = now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日 星期' + [
+                '日', '一', '二', '三', '四', '五', '六'
+            ][now.getDay()];
+        }
+
+        // ============ 锁屏 ============
+        function setupLockScreen() {
+            const ls = document.getElementById('lockscreen');
+            ls.addEventListener('touchstart', e => { lockStartY = e.touches[0].clientY;
+                lockMoved = false; });
+            ls.addEventListener('touchmove', e => {
+                const dy = lockStartY - e.touches[0].clientY;
+                if (dy > 20) lockMoved = true;
+                if (dy > 0) ls.style.transform = `translateY(-${Math.min(dy,200)}px)`;
+            });
+            ls.addEventListener('touchend', e => {
+                const dy = lockStartY - (e.changedTouches[0]?.clientY || lockStartY);
+                if (dy > 80 && lockMoved) unlock();
+                else ls.style.transform = '';
+            });
+            ls.addEventListener('mousedown', e => { lockStartY = e.clientY;
+                lockMoved = false; });
+            ls.addEventListener('mousemove', e => {
+                if (e.buttons !== 1) return;
+                const dy = lockStartY - e.clientY;
+                if (dy > 20) lockMoved = true;
+                if (dy > 0) ls.style.transform = `translateY(-${Math.min(dy,200)}px)`;
+            });
+            ls.addEventListener('mouseup', e => {
+                const dy = lockStartY - e.clientY;
+                if (dy > 80 && lockMoved) unlock();
+                else ls.style.transform = '';
+            });
+        }
+
+        function unlock() {
+            document.getElementById('lockscreen').classList.add('unlock');
+            setTimeout(() => {
+                document.getElementById('lockscreen').style.display = 'none';
+            }, 400);
+        }
+
+        function updateLockNotif() {
+            const body = document.getElementById('lockNotifBody');
+            const lastChar = characters.find(c => c.history.length > 0);
+            if (lastChar) {
+                const lastMsg = lastChar.history[lastChar.history.length - 1];
+                body.textContent = lastChar.name + '：' + (lastMsg.s === 'me' ? '（你发了一条消息）' : lastMsg.t);
+            }
+        }
+
+        // ============ 通知中心 ============
+        function setupNotifCenter() {
+            const nc = document.getElementById('notifCenter');
+            let startY = 0;
+            document.getElementById('screen').addEventListener('touchstart', e => {
+                if (curApp !== 'home') return;
+                if (e.touches[0].clientY < 30) startY = e.touches[0].clientY;
+            });
+            document.getElementById('screen').addEventListener('touchmove', e => {
+                if (!startY || curApp !== 'home') return;
+                const dy = e.touches[0].clientY - startY;
+                if (dy > 60) { nc.classList.add('show');
+                    startY = 0; }
+            });
+            document.getElementById('screen').addEventListener('touchend', () => { startY = 0; });
+            nc.addEventListener('click', function(e) {
+                if (e.target === nc) nc.classList.remove('show');
+            });
+        }
+
+        function addNotif(app, msg) {
+            notifs.unshift({ app, msg, time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit',
+                    minute: '2-digit' }) });
+            if (notifs.length > 20) notifs.pop();
+            renderNotifs();
+        }
+
+        function renderNotifs() {
+            const list = document.getElementById('notifList');
+            if (!list) return;
+            list.innerHTML = notifs.length ? notifs.map(n =>
+                `<div class="notif-item"><div class="ni-app">${n.app} · ${n.time}</div>${n.msg}</div>`
+            ).join('') : '<div class="text-sm text-center" style="padding:20px;">暂无通知</div>';
+        }
+
+        // ============ 渲染主屏幕 ============
+        function renderApps() {
+            const nb = notes.length,
+                mb = msgs.filter(m => !m.s).length,
+                cb = characters.reduce((sum, c) => sum + c.history.filter(h => h.s === 'you').length, 0);
+            document.getElementById('appsGrid').innerHTML = APPS.map(a => {
+                let b = '';
+                if (a.id === 'notes' && nb) b = `<span class="badge">${nb}</span>`;
+                if (a.id === 'messages' && mb) b = `<span class="badge">${mb}</span>`;
+                if (a.id === 'chat' && cb) b = `<span class="badge">${cb}</span>`;
+                return `<div class="app-item" onclick="openApp('${a.id}')"><div class="app-icon" style="background:${a.c}">${a.i}${b}</div><span class="app-label">${a.n}</span></div>`;
+            }).join('');
+            document.getElementById('dockBar').innerHTML = DOCK.map(a =>
+                `<div class="app-item" onclick="openApp('${a.id}')"><div class="app-icon" style="background:${a.c}">${a.i}</div><span class="app-label">${a.n}</span></div>`
+                ).join('');
+        }
+
+        // ============ 应用切换 ============
+        function openApp(id) {
+            curApp = id;
+            document.getElementById('homescreen').style.display = 'none';
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+            const el = document.getElementById('app' + id.charAt(0).toUpperCase() + id.slice(1));
+            if (!el) return;
+            el.classList.add('active');
+            if (id === 'clock') startClock();
+            if (id === 'music') updateMusicUI();
+            if (id === 'notes') renderNotes();
+            if (id === 'contacts') renderContacts();
+            if (id === 'calendar') renderCal();
+            if (id === 'messages') renderMsgs();
+            if (id === 'chat') renderCharList();
+            if (id === 'weather') renderWeather();
+        }
+
+        function goHome() {
+            curApp = 'home';
+            document.getElementById('homescreen').style.display = '';
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+            clearTimers();
+            renderApps();
+            updateLockNotif();
+        }
+
+        function clearTimers() {
+            [clockTimer, swTimer, musicInt].forEach(t => { if (t) clearInterval(t); });
+            swRunning = false;
+            swSec = 0;
+            musicPlaying = false;
+        }
+
+        // ============ 初始化应用UI ============
+        function initAllUIs() {
+            // 天气
+            document.getElementById('appWeather').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">天气</span></div>
+            <div class="app-body text-center"><div class="weather-icon" id="wIcon" style="font-size:60px;"></div><div class="weather-temp mt-12" id="wTemp" style="font-size:52px;font-weight:200;color:#fff;"></div><div class="text-sm" id="wDesc"></div><div class="weather-grid mt-20" id="wDetails"></div><p class="text-sm mt-12">📡 模拟数据 · 四川德阳</p></div>`;
+
+            // 时钟
+            document.getElementById('appClock').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">时钟</span></div>
+            <div class="app-body text-center"><div class="clock-time" id="clockDisp" style="font-size:48px;font-weight:200;color:#fff;font-family:monospace;"></div><div class="clock-date" id="dateDisp" style="font-size:14px;color:#aaa;margin-top:6px;"></div><div class="mt-20"><button class="btn btn-a" onclick="toggleSW()">⏱️ 秒表</button></div><div id="swDisp" class="mt-12" style="font-size:26px;color:#4ecdc4;display:none;"></div></div>`;
+
+            // 记事本
+            document.getElementById('appNotes').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">记事本</span><span class="text-sm" id="nCount">${notes.length}条</span></div>
+            <div class="app-body"><div class="row"><input class="input flex-1" id="nInput" placeholder="写点什么..." onkeydown="if(event.key==='Enter')addNote()"><button class="btn btn-a" onclick="addNote()">添加</button></div><div id="nList"></div></div>`;
+
+            // 通讯录
+            document.getElementById('appContacts').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">通讯录</span><span class="text-sm">${contacts.length}人</span></div>
+            <div class="app-body"><input class="input" id="cSearch" placeholder="🔍 搜索..." oninput="renderContacts()" style="margin-bottom:10px;"><div class="row"><input class="input flex-1" id="cName" placeholder="姓名"><input class="input flex-1" id="cPhone" placeholder="电话"><button class="btn btn-a" onclick="addContact()">添加</button></div><div id="cList"></div></div>`;
+
+            // 日历
+            document.getElementById('appCalendar').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">日历</span></div>
+            <div class="app-body"><div class="cal-nav" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><button class="btn btn-g" onclick="chMonth(-1)">◀</button><span id="calLabel" style="color:#fff;font-weight:600;"></span><button class="btn btn-g" onclick="chMonth(1)">▶</button></div><div class="cal-grid" id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;"></div><div class="mt-12"><strong style="color:#fff;">📋 日程</strong><div class="row mt-8"><input class="input" id="eDate" placeholder="日" style="width:50px;flex:none;"><input class="input flex-1" id="eText" placeholder="内容"><button class="btn btn-a" onclick="addEvent()">添加</button></div><div id="eList"></div></div></div>`;
+
+            // 音乐
+            document.getElementById('appMusic').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">音乐</span></div>
+            <div class="app-body text-center"><div class="music-art" id="mArt" style="width:150px;height:150px;border-radius:18px;margin:16px auto;display:flex;align-items:center;justify-content:center;font-size:60px;box-shadow:0 12px 30px rgba(255,107,107,0.3);">🎵</div><div class="music-song mt-12" id="mTitle" style="font-size:17px;font-weight:600;color:#fff;"></div><div class="music-artist" id="mArtist" style="color:#aaa;font-size:13px;margin-top:2px;"></div><div class="progress-bar mt-12" onclick="seekMusic(event)" style="width:100%;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;cursor:pointer;"><div class="progress-fill" id="mFill" style="height:100%;background:#4ecdc4;border-radius:2px;width:30%;"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:#888;margin-top:4px;"><span id="mCur">1:12</span><span>4:00</span></div><div class="music-ctrls mt-8" style="display:flex;justify-content:center;align-items:center;gap:16px;"><button class="btn btn-g" onclick="prevMusic()" style="width:40px;height:40px;border-radius:50%;">⏮️</button><button class="btn btn-g" id="mPlay" onclick="toggleMusic()" style="width:56px;height:56px;border-radius:50%;font-size:20px;">▶️</button><button class="btn btn-g" onclick="nextMusic()" style="width:40px;height:40px;border-radius:50%;">⏭️</button></div></div>`;
+
+            // 信息
+            document.getElementById('appMessages').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goHome()">←</button><span class="app-title">信息 💬</span></div>
+            <div class="app-body" style="display:flex;flex-direction:column;height:100%;"><div class="msg-container flex-1" id="mList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div><div class="row" style="margin-top:8px;"><input class="input flex-1" id="mInput" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendMsg()"><button class="btn btn-a" onclick="sendMsg()">📤</button></div></div>`;
+
+            // 聊天伙伴
+            document.getElementById('appChat').innerHTML = `
+            <div class="app-header"><button class="btn-back" onclick="goBackFromChat()">←</button><span class="app-title" id="chatTitle">聊天伙伴</span><button class="btn btn-g" id="btnNewChar" style="font-size:11px;padding:6px 10px;" onclick="showCreateChar()">＋新建</button></div>
+            <div class="app-body" id="chatBody"><div id="charListView"></div><div id="charChatView" style="display:none;flex-direction:column;height:100%;"><div class="heart-bar"><div class="heart-fill" id="heartFill" style="width:50%;"></div></div><div style="font-size:11px;color:#888;text-align:center;" id="heartLabel">好感度 50</div><div class="msg-container flex-1" id="charMsgs" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div><div class="row" style="margin-top:8px;"><input class="input flex-1" id="charInput" placeholder="发消息..." onkeydown="if(event.key==='Enter')sendCharMsg()"><button class="btn btn-a" onclick="sendCharMsg()">发送</button></div></div></div>`;
+        }
+
+        // ============ 天气 ============
+        function renderWeather() {
+            const now = new Date(),
+                m = now.getMonth() + 1;
+            const s = SEASONS.find(x => x.m.includes(m)) || SEASONS[1];
+            const t = s.t[0] + Math.floor(Math.random() * (s.t[1] - s.t[0]));
+            document.getElementById('wIcon').textContent = s.icon;
+            document.getElementById('wTemp').textContent = t + '°';
+            document.getElementById('wDesc').textContent = s.desc + ' · 德阳';
+            document.getElementById('wDetails').innerHTML = `
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">💧 ${40+Math.floor(Math.random()*30)}%</div><div class="l" style="font-size:10px;color:#888;">湿度</div></div>
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">💨 ${5+Math.floor(Math.random()*20)}km/h</div><div class="l" style="font-size:10px;color:#888;">风速</div></div>
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">👁️ 10km</div><div class="l" style="font-size:10px;color:#888;">能见度</div></div>
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">🌡️ ${t+3}°</div><div class="l" style="font-size:10px;color:#888;">最高</div></div>
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">🌡️ ${t-4}°</div><div class="l" style="font-size:10px;color:#888;">最低</div></div>
+            <div class="weather-card" style="background:var(--card);border-radius:12px;padding:12px;text-align:center;"><div class="v" style="font-size:16px;font-weight:600;color:#fff;">💡 ${s.tips}</div><div class="l" style="font-size:10px;color:#888;">提醒</div></div>`;
+        }
+
+        // ============ 时钟 ============
+        function startClock() { updateAllTimes(); }
+
+        function toggleSW() {
+            const d = document.getElementById('swDisp');
+            if (!d) return;
+            if (swRunning) { clearInterval(swTimer);
+                swTimer = null;
+                swRunning = false;
+                d.style.display = 'none'; } else { swRunning = true;
+                d.style.display = 'block';
+                d.textContent = fmtSW(swSec);
+                swTimer = setInterval(() => { swSec++;
+                    d.textContent = fmtSW(swSec); }, 1000); }
+        }
+
+        function fmtSW(s) { return [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60].map(v => String(v).padStart(
+                2, '0')).join(':'); }
+
+        // ============ 记事本 ============
+        function addNote() {
+            const el = document.getElementById('nInput');
+            if (!el || !el.value.trim()) return;
+            notes.unshift({ t: el.value.trim(), d: new Date().toLocaleString('zh-CN') });
+            el.value = '';
+            save('notes', notes);
+            renderNotes();
+            renderApps();
+            document.getElementById('nCount').textContent = notes.length + '条';
+            addNotif('📝 记事本', '已添加新笔记');
+        }
+
+        function delNote(i) { notes.splice(i, 1);
+            save('notes', notes);
+            renderNotes();
+            renderApps();
+            document.getElementById('nCount').textContent = notes.length + '条'; }
+
+        function renderNotes() {
+            const l = document.getElementById('nList');
+            if (!l) return;
+            l.innerHTML = notes.length ? notes.map((n, i) =>
+                `<div class="card" style="display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:600;color:#fff;">${n.t}</div><div class="text-sm">${n.d}</div></div><button class="btn btn-r" style="padding:4px 8px;font-size:11px;" onclick="delNote(${i})">🗑️</button></div>`
+                ).join('') :
+                '<div class="text-center text-sm" style="padding:30px;">📝 还没有笔记</div>';
+        }
+
+        // ============ 通讯录 ============
+        function addContact() {
+            const nm = document.getElementById('cName'),
+                ph = document.getElementById('cPhone');
+            if (!nm || !ph || !nm.value.trim() || !ph.value.trim()) return;
+            const cs = ['#fd79a8', '#74b9ff', '#00b894', '#ffc048', '#a29bfe', '#e17055'];
+            contacts.push({ n: nm.value.trim(), p: ph.value.trim(), a: nm.value.trim()[0], c: cs[Math.floor(Math.random() *
+                    cs.length)] });
+            nm.value = '';
+            ph.value = '';
+            save('contacts', contacts);
+            renderContacts();
+            document.querySelector('#appContacts .text-sm').textContent = contacts.length + '人';
+        }
+
+        function delContact(i) { contacts.splice(i, 1);
+            save('contacts', contacts);
+            renderContacts();
+            document.querySelector('#appContacts .text-sm').textContent = contacts.length + '人'; }
+
+        function renderContacts() {
+            const l = document.getElementById('cList'),
+                s = (document.getElementById('cSearch')?.value || '').toLowerCase();
+            if (!l) return;
+            const f = contacts.filter(c => c.n.toLowerCase().includes(s) || c.p.includes(s));
+            l.innerHTML = f.length ? f.map(c => {
+                const i = contacts.indexOf(c);
+                return `<div class="card" style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="showModal('📞 ${c.n}','电话：${c.p}')"><div style="width:38px;height:38px;border-radius:50%;background:${c.c};display:flex;align-items:center;justify-content:center;font-size:18px;">${c.a}</div><div class="flex-1"><div style="font-weight:600;color:#fff;">${c.n}</div><div class="text-sm">${c.p}</div></div><button class="btn btn-r" style="padding:4px 8px;font-size:11px;" onclick="event.stopPropagation();delContact(${i})">🗑️</button></div>`;
+            }).join('') : '<div class="text-center text-sm" style="padding:20px;">📇 无匹配联系人</div>';
+        }
+
+        // ============ 日历 ============
+        function chMonth(d) { calM += d; if (calM > 11) { calM = 0;
+                calY++; } if (calM < 0) { calM = 11;
+                calY--; }
+            renderCal(); }
+
+        function renderCal() {
+            document.getElementById('calLabel').textContent = calY + '年 ' + (calM + 1) + '月';
+            const g = document.getElementById('calGrid'),
+                h = ['日', '一', '二', '三', '四', '五', '六'];
+            g.innerHTML = h.map(x => `<div style="font-size:10px;color:#888;padding:5px 0;font-weight:600;">${x}</div>`)
+                .join('');
+            const fd = new Date(calY, calM, 1).getDay(),
+                dim = new Date(calY, calM + 1, 0).getDate(),
+                dp = new Date(calY, calM, 0).getDate(),
+                now = new Date(),
+                ts = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
+            for (let i = fd - 1; i >= 0; i--) g.innerHTML +=
+                `<div class="cal-day" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:12px;color:#555;cursor:pointer;" onclick="selDate(${calY},${calM-1},${dp-i})">${dp-i}</div>`;
+            for (let d = 1; d <= dim; d++) {
+                const k = calY + '-' + calM + '-' + d,
+                    isT = k === ts,
+                    hasE = events[k]?.length;
+                g.innerHTML +=
+                    `<div class="cal-day" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:12px;color:#ddd;cursor:pointer;position:relative;${isT?'background:#4ecdc4;color:#000;font-weight:700;':''}" onclick="selDate(${calY},${calM},${d})">${d}${hasE?'<span style="position:absolute;bottom:2px;width:4px;height:4px;background:#ff6b6b;border-radius:50%;"></span>':''}</div>`;
+            }
+            const rm = 42 - (fd + dim);
+            for (let d = 1; d <= rm; d++) g.innerHTML +=
+                `<div class="cal-day" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:12px;color:#555;cursor:pointer;" onclick="selDate(${calY},${calM+1},${d})">${d}</div>`;
+            renderEvents();
+        }
+
+        function selDate(y, m, d) {
+            const k = y + '-' + m + '-' + d,
+                es = events[k] || [];
+            document.getElementById('eDate').value = d;
+            if (es.length) showModal('📅 ' + y + '年' + (m + 1) + '月' + d + '日', es.map((e, i) =>
+                `${e} <button onclick="delEvent('${k}',${i});closeModal();" style="background:none;border:none;color:#ff6b6b;cursor:pointer;">删除</button>`
+                .join('<br>')));
+        }
+
+        function addEvent() {
+            const di = document.getElementById('eDate'),
+                ti = document.getElementById('eText');
+            if (!di || !ti || !di.value.trim() || !ti.value.trim()) return;
+            const d = +di.value;
+            if (isNaN(d) || d < 1 || d > 31) return;
+            const k = calY + '-' + calM + '-' + d;
+            (events[k] = events[k] || []).push(ti.value.trim());
+            ti.value = '';
+            save('events', events);
+            renderCal();
+            addNotif('📅 日历', '已添加日程');
+        }
+
+        function delEvent(k, i) { events[k]?.splice(i, 1); if (!events[k].length) delete events[k];
+            save('events', events);
+            renderCal(); }
+
+        function renderEvents() {
+            const l = document.getElementById('eList');
+            if (!l) return;
+            const all = [];
+            for (const [k, es] of Object.entries(events)) { const [y, m, d] = k.split('-');
+                es.forEach(e => all.push({ d: `${y}年${+m+1}月${d}日`, t: e, k, i: all.length })); }
+            all.sort((a, b) => a.k.localeCompare(b.k));
+            l.innerHTML = all.length ? all.map(e =>
+                `<div class="card" style="display:flex;align-items:center;"><span class="text-sm">${e.d}</span><span class="flex-1" style="color:#fff;margin:0 8px;">${e.t}</span><button class="btn btn-r" style="padding:4px 8px;font-size:11px;" onclick="delEvent('${e.k}',${e.i-all.findIndex(x=>x.k===e.k)});renderCal();">🗑️</button></div>`
+                ).join('') : '<div class="text-center text-sm" style="padding:16px;">暂无日程</div>';
+        }
+
+        // ============ 音乐 ============
+        function prevMusic() { musicIdx = (musicIdx - 1 + MUSICS.length) % MUSICS.length;
+            musicPos = 0;
+            musicPlaying = false;
+            updateMusicUI(); }
+
+        function nextMusic() { musicIdx = (musicIdx + 1) % MUSICS.length;
+            musicPos = 0;
+            musicPlaying = false;
+            updateMusicUI(); }
+
+        function toggleMusic() { musicPlaying = !musicPlaying;
+            updateMusicUI(); if (musicPlaying) { if (musicInt) clearInterval(musicInt);
+                musicInt = setInterval(() => { if (!musicPlaying || curApp !== 'music') { clearInterval(musicInt);
+                        musicInt = null; return; } musicPos = Math.min(100, musicPos + 0.5);
+                    updateMusicUI(); if (musicPos >= 100) { musicPlaying = false;
+                        musicPos = 0;
+                        updateMusicUI();
+                        clearInterval(musicInt);
+                        musicInt = null;
+                        nextMusic(); } }, 500); } else { if (musicInt) { clearInterval(musicInt);
+                    musicInt = null; } } }
+
+        function updateMusicUI() {
+            const m = MUSICS[musicIdx];
+            document.getElementById('mArt').style.background = m.color;
+            document.getElementById('mTitle').textContent = m.title;
+            document.getElementById('mArtist').textContent = m.artist;
+            document.getElementById('mFill').style.width = musicPos + '%';
+            document.getElementById('mPlay').textContent = musicPlaying ? '⏸️' : '▶️';
+            const t = Math.floor(240 * musicPos / 100);
+            document.getElementById('mCur').textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+        }
+
+        function seekMusic(e) { musicPos = Math.max(0, Math.min(100, ((e.clientX - e.currentTarget.getBoundingClientRect().left) /
+                e.currentTarget.offsetWidth) * 100));
+            updateMusicUI(); }
+
+        // ============ 信息 ============
+        function sendMsg() {
+            const el = document.getElementById('mInput');
+            if (!el || !el.value.trim()) return;
+            const n = new Date(),
+                t = n.getHours().toString().padStart(2, '0') + ':' + n.getMinutes().toString().padStart(2, '0');
+            msgs.push({ t: el.value.trim(), s: true, time: t });
+            el.value = '';
+            save('msgs', msgs);
+            renderMsgs();
+            addNotif('💬 信息', '消息已发送');
+            setTimeout(() => {
+                if (curApp !== 'messages') return;
+                const r = ['好的👍', '哈哈😄', '嗯嗯知道了', '太棒了！', '回头聊～'];
+                msgs.push({ t: r[Math.floor(Math.random() * r.length)], s: false, time: new Date().getHours()
+                        .toString().padStart(2, '0') + ':' + new Date().getMinutes().toString().padStart(2, '0') });
+                save('msgs', msgs);
+                renderMsgs();
+                renderApps();
+                addNotif('💬 信息', '收到新消息');
+            }, 1500);
+        }
+
+        function renderMsgs() {
+            const c = document.getElementById('mList');
+            if (!c) return;
+            c.innerHTML = msgs.map(m =>
+                `<div class="msg ${m.s?'me':'you'}">${m.t}<div style="font-size:9px;opacity:.5;margin-top:3px;">${m.time}</div></div>`
+                ).join('');
+            c.scrollTop = c.scrollHeight;
+        }
+
+        // ============ 聊天伙伴 - 核心 ============
+        function showCreateChar() {
+            const html = `
+            <h3>✨ 创建新角色</h3>
+            <input id="newName" placeholder="名字">
+            <select id="newAvatar">
+                <option value="🐱">🐱 猫系</option><option value="🐶">🐶 犬系</option><option value="🌸">🌸 花</option>
+                <option value="🔥">🔥 火</option><option value="👻">👻 幽灵</option><option value="🤖">🤖 机器人</option>
+                <option value="👽">👽 外星人</option><option value="🦊">🦊 狐狸</option><option value="🐰">🐰 兔子</option>
+            </select>
+            <select id="newPersonality">
+                <option value="温柔">温柔</option><option value="傲娇">傲娇</option><option value="毒舌">毒舌</option>
+                <option value="憨厚">憨厚</option><option value="热情">热情</option><option value="高冷">高冷</option>
+            </select>
+            <input id="newCatch" placeholder="口头禅">
+            <select id="newRelation">
+                <option value="朋友">朋友</option><option value="损友">损友</option><option value="闺蜜">闺蜜</option>
+                <option value="长辈">长辈</option><option value="暗恋对象">暗恋对象</option>
+            </select>
+            <div class="row"><button class="btn btn-a flex-1" onclick="createChar()">创建</button><button class="btn btn-g flex-1" onclick="closeModal()">取消</button></div>`;
+            document.getElementById('modalContent').innerHTML = html;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+
+        function createChar() {
+            const name = document.getElementById('newName')?.value.trim();
+            if (!name) return;
+            const char = {
+                id: 'c' + Date.now(),
+                name,
+                avatar: document.getElementById('newAvatar')?.value || '🐱',
+                personality: document.getElementById('newPersonality')?.value || '温柔',
+                catchphrase: document.getElementById('newCatch')?.value || '你好呀',
+                relation: document.getElementById('newRelation')?.value || '朋友',
+                birthday: '',
+                heart: 20,
+                history: []
+            };
+            characters.push(char);
+            saveChars();
+            closeModal();
+            renderCharList();
+            addNotif('👤 聊天伙伴', `${name}已加入！`);
+            openChatWith(char);
+        }
+
+        function deleteChar(id) {
+            if (!confirm('确定删除这个角色吗？')) return;
+            characters = characters.filter(c => c.id !== id);
+            saveChars();
+            curChar = null;
+            renderCharList();
+        }
+
+        function renderCharList() {
+            document.getElementById('btnNewChar').style.display = '';
+            document.getElementById('chatTitle').textContent = '聊天伙伴';
+            document.getElementById('charListView').style.display = '';
+            document.getElementById('charChatView').style.display = 'none';
+            curChar = null;
+            const l = document.getElementById('charListView');
+            l.innerHTML = characters.length ? characters.map(c => `
+            <div class="char-card" onclick="openChatWith(characters.find(x=>x.id==='${c.id}'))">
+                <div class="char-avatar" style="background:${getColor(c.personality)};">${c.avatar}</div>
+                <div class="char-info">
+                    <div class="char-name">${c.name} <span class="text-sm">· ${c.relation}</span></div>
+                    <div class="char-mood">${c.personality} · ${c.catchphrase}</div>
+                    <div class="char-heart">♥ ${c.heart}</div>
+                </div>
+                <button class="char-delete" onclick="event.stopPropagation();deleteChar('${c.id}')">🗑️</button>
+            </div>`).join('') :
+                '<div class="text-center text-sm" style="padding:40px;">还没有聊天伙伴<br><br><button class="btn btn-a" onclick="showCreateChar()">＋ 创建第一个角色</button></div>';
+        }
+
+        function openChatWith(char) {
+            curChar = char;
+            document.getElementById('btnNewChar').style.display = 'none';
+            document.getElementById('chatTitle').textContent = char.avatar + ' ' + char.name;
+            document.getElementById('charListView').style.display = 'none';
+            document.getElementById('charChatView').style.display = 'flex';
+            renderCharChat();
+            // 主动发消息
+            if (char.history.length === 0) {
+                setTimeout(() => {
+                    const hi = generateReply(char, '你好');
+                    char.history.push({ t: hi, s: 'you', time: nowStr() });
+                    char.heart = Math.min(100, char.heart + 1);
+                    saveChars();
+                    renderCharChat();
+                }, 800);
+            }
+        }
+
+        function goBackFromChat() {
+            if (curChar) { renderCharList(); return; }
+            goHome();
+        }
+
+        function sendCharMsg() {
+            if (!curChar) return;
+            const el = document.getElementById('charInput');
+            if (!el || !el.value.trim()) return;
+            const myMsg = el.value.trim();
+            el.value = '';
+            curChar.history.push({ t: myMsg, s: 'me', time: nowStr() });
+            curChar.heart = Math.min(100, curChar.heart + 1);
+            saveChars();
+            renderCharChat();
+            // 回复
+            const delay = 600 + Math.random() * 1200;
+            setTimeout(() => {
+                const reply = generateReply(curChar, myMsg);
+                curChar.history.push({ t: reply, s: 'you', time: nowStr() });
+                curChar.heart = Math.min(100, curChar.heart + 1);
+                saveChars();
+                renderCharChat();
+                addNotif('👤 ' + curChar.name, reply.substring(0, 30) + '...');
+                updateLockNotif();
+                renderApps();
+                // 偶尔送礼物
+                if (Math.random() < 0.15) {
+                    setTimeout(() => {
+                        const gifts = ['🌸', '🍰', '🎁', '💌', '⭐', '🍀'];
+                        const g = gifts[Math.floor(Math.random() * gifts.length)];
+                        curChar.history.push({ t: '（送你一个小礼物）' + g, s: 'you', time: nowStr(),
+                            gift: true });
+                        curChar.heart = Math.min(100, curChar.heart + 5);
+                        saveChars();
+                        renderCharChat();
+                    }, 2000);
+                }
+            }, delay);
+        }
+
+        function generateReply(char, input) {
+            const p = PERSONALITIES[char.personality] || PERSONALITIES['温柔'];
+            const lower = input.toLowerCase();
+            let reply = '';
+
+            // 关键词匹配
+            if (/你好|嗨|hi|hello/.test(lower)) {
+                const hellos = {
+                    '温柔': ['你好呀～今天过得好吗？', '嗨！见到你好开心✨', '你好呀，一直在等你呢'],
+                    '傲娇': ['哼，终于想起我了？', '切，我还以为你把我忘了', '哦，是你啊...也不是特别想跟你聊'],
+                    '毒舌': ['哟，还知道来找我？', '终于舍得开口了？', '我还以为你键盘坏了呢'],
+                    '憨厚': ['嘿嘿，你好你好！', '你好呀！今天天气不错哈', '哈哈你来啦，俺刚还在想你呢'],
+                    '热情': ['嗨！！！想死你了！', '啊啊啊你来了！今天必须好好聊聊！', '太棒了你来了！我正好有事跟你说'],
+                    '高冷': ['嗯。', '好。', '来了。'],
+                };
+                reply = hellos[char.personality][Math.floor(Math.random() * 3)];
+            } else if (/吃|饿|饭|美食/.test(lower)) {
+                const foods = {
+                    '温柔': ['要好好吃饭哦，别饿着了🌸', '我给你推荐一家很棒的餐厅吧？', '记得按时吃饭，身体要紧'],
+                    '傲娇': ['哼，又不好好吃饭？...算了，要我推荐几家店给你吗', '吃饭这种事还要我提醒...烦死了，快去吃'],
+                    '毒舌': ['你是打算靠光合作用活着吗？', '终于想起来要吃饭了？不容易'],
+                    '憨厚': ['嘿嘿俺也饿了，一起去吃吧？', '吃饭是大事！俺知道一家面馆特别好'],
+                    '热情': ['吃饭？！走走走我知道一家超好吃的！', '必须安排！火锅烧烤还是日料？'],
+                    '高冷': ['嗯，吃吧。', '别饿着。'],
+                };
+                reply = foods[char.personality][Math.floor(Math.random() * 3)];
+            } else if (/困|睡|累|晚安/.test(lower)) {
+                const sleeps = {
+                    '温柔': ['早点休息吧，晚安🌙', '累了吧？好好睡一觉，明天见', '要照顾好自己哦，晚安✨'],
+                    '傲娇': ['切，又熬夜...算了，晚安', '终于知道困了？赶紧睡吧，我可不想明天看你黑眼圈'],
+                    '毒舌': ['你终于意识到自己需要睡觉了？奇迹', '熬夜冠军终于要休息了？'],
+                    '憨厚': ['嘿嘿晚安！做个好梦哈', '早睡早起身体好！俺也准备睡了'],
+                    '热情': ['晚安！！！明天见！！！', '睡个好觉！明天有精力继续嗨！'],
+                    '高冷': ['晚安。', '嗯。'],
+                };
+                reply = sleeps[char.personality][Math.floor(Math.random() * 3)];
+            } else if (/开心|高兴|棒/.test(lower)) {
+                reply = p.style === 'tsundere' ? '哼，开心就开心呗...不过看你开心我也...没什么' :
+                    p.style === 'cold' ? '挺好。' : '看到你开心我也很开心！' + p.emoji;
+            } else if (/难过|伤心|哭/.test(lower)) {
+                reply = p.style === 'tsundere' ? '谁欺负你了？...虽然不关我事，但你说说看' :
+                    p.style === 'cold' ? '会好的。' : '别难过，我在这里陪你' + p.emoji;
+            } else {
+                // 通用回复
+                const generals = {
+                    '温柔': ['嗯嗯，我懂～', '是呢，你说得对', '要不要聊聊别的？', '我在听呢，继续说呀'],
+                    '傲娇': ['哦...然后呢？', '好吧好吧，算你对', '我才没有很在意呢...不过你说'],
+                    '毒舌': ['就这？', '行吧，你继续', '有点意思，继续说'],
+                    '憨厚': ['哈哈，有道理！', '俺觉得你说得对', '嘿嘿，原来是这样'],
+                    '热情': ['对对对！我也这么想！', '太有意思了！继续继续！', '啊啊啊然后呢然后呢？'],
+                    '高冷': ['嗯。', '说吧。', '继续。'],
+                };
+                reply = generals[char.personality][Math.floor(Math.random() * generals[char.personality].length)];
+            }
+
+            // 偶尔加上口头禅
+            if (Math.random() < 0.3 && char.catchphrase) reply = char.catchphrase + ' ' + reply;
+            if (Math.random() < 0.4) reply += ' ' + p.emoji;
+
+            return reply;
+        }
+
+        function renderCharChat() {
+            if (!curChar) return;
+            document.getElementById('heartFill').style.width = curChar.heart + '%';
+            document.getElementById('heartLabel').textContent = '好感度 ' + curChar.heart;
+            const c = document.getElementById('charMsgs');
+            c.innerHTML = curChar.history.map(h =>
+                `<div class="msg ${h.s==='me'?'me':'you'}">${h.t}<div style="font-size:9px;opacity:.5;margin-top:3px;">${h.time}</div></div>`
+                ).join('');
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function getColor(personality) {
+            const map = { '温柔': '#fd79a8', '傲娇': '#e17055', '毒舌': '#6c5ce7', '憨厚': '#00b894', '热情': '#fdcb6e',
+                '高冷': '#636e72' };
+            return map[personality] || '#74b9ff';
+        }
+
+        // ============ 来电系统 ============
+        function scheduleRandomCall() {
+            setInterval(() => {
+                if (Math.random() < 0.2 && characters.length > 0 && curApp === 'home') {
+                    const caller = characters[Math.floor(Math.random() * characters.length)];
+                    triggerCall(caller);
+                }
+            }, 60000);
+        }
+
+        function triggerCall(char) {
+            document.getElementById('callAvatar').textContent = char.avatar;
+            document.getElementById('callName').textContent = char.name;
+            document.getElementById('callOverlay').classList.add('show');
+            window._caller = char;
+        }
+
+        function acceptCall() {
+            const char = window._caller;
+            document.getElementById('callOverlay').classList.remove('show');
+            if (char) {
+                openApp('chat');
+                setTimeout(() => openChatWith(char), 300);
+                char.history.push({ t: '（刚刚通了电话）📞', s: 'you', time: nowStr() });
+                char.heart = Math.min(100, char.heart + 3);
+                saveChars();
+            }
+        }
+
+        function rejectCall() {
+            document.getElementById('callOverlay').classList.remove('show');
+            addNotif('📞 未接来电', (window._caller?.name || '未知') + ' 来电未接');
+            window._caller = null;
+        }
+
+        function nowStr() { return new Date().getHours().toString().padStart(2, '0') + ':' + new Date().getMinutes()
+                .toString().padStart(2, '0'); }
+
+        // ============ 弹窗 ============
+        function showModal(title, msg) {
+            document.getElementById('modalContent').innerHTML =
+                `<h3>${title}</h3><p>${msg}</p><button class="btn btn-a" onclick="closeModal()">确定</button>`;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+        document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this)
+            closeModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') curApp === 'home' ? closeModal() :
+                goHome(); });
+
+        // ============ 启动 ============
+        init();
+        console.log('📱 小手机模拟器 · 灵魂版 已就绪');
+        console.log('  🔓 锁屏 | 🔔 通知中心 | 👤 自定义聊天伙伴 | 📞 来电互动');
+        console.log('  🏙️ 四川德阳');
+    </script>
+</body>
+</html>
